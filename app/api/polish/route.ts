@@ -2,6 +2,9 @@ import { generateText } from "ai"
 import { openai } from "@ai-sdk/openai"
 import { anthropic } from "@ai-sdk/anthropic"
 import { google } from "@ai-sdk/google"
+import { mistral } from "@ai-sdk/mistral"
+import { azure, createAzure } from "@ai-sdk/azure"
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
 import { type NextRequest, NextResponse } from "next/server"
 
 interface Example {
@@ -18,18 +21,32 @@ export async function POST(request: NextRequest) {
       provider = "openai",
       model = "gpt-4o-mini",
       apiKey,
+      baseURL,
+      apiVersion,
     } = await request.json()
 
     if (!transcript || !transcript.trim()) {
       return NextResponse.json({ error: "Transcript is required" }, { status: 400 })
     }
 
-    const polishedText = await polishTextWithAI(transcript, systemPrompt, examples, provider, model, apiKey)
+    const polishedText = await polishTextWithAI(
+      transcript,
+      systemPrompt,
+      examples,
+      provider,
+      model,
+      apiKey,
+      baseURL,
+      apiVersion,
+    )
 
     return NextResponse.json({ polishedText })
   } catch (error) {
-    console.error("Error in polish API:", error)
-    return NextResponse.json({ error: "Failed to polish transcript" }, { status: 500 })
+    console.error("Error polishing transcript:", error)
+    return NextResponse.json(
+      { error: "Failed to polish transcript" },
+      { status: 500 }
+    )
   }
 }
 
@@ -40,31 +57,38 @@ async function polishTextWithAI(
   provider: string,
   model: string,
   apiKey?: string,
+  baseURL?: string,
+  apiVersion?: string,
 ): Promise<string> {
   try {
     // Build the prompt with few-shot examples
     let prompt = systemPrompt + "\n\n"
-
-    // Add examples if provided (following the pattern from the Python file)
+    
     if (examples.length > 0) {
-      prompt += "Here are some examples of how to polish transcriptions:\n\n"
-
+      prompt += "Here are some examples of the desired output format:\n\n"
       examples.forEach((example, index) => {
-        if (example.input.trim() && example.output.trim()) {
-          prompt += `Example ${index + 1}:\n`
-          prompt += `Input: ${example.input.trim()}\n`
-          prompt += `Output: ${example.output.trim()}\n\n`
-        }
+        prompt += `Example ${index + 1}:\nInput: ${example.input}\nOutput: ${example.output}\n\n`
       })
+      prompt += "Now please process the following transcript:\n\n"
     }
-
-    prompt += `Now polish this transcription:\n${transcript}`
+    
+    prompt += transcript
 
     let modelInstance
     switch (provider) {
       case "openai":
         modelInstance = apiKey ? openai(model, { apiKey }) : openai(model)
         break
+      case "azure-openai": {
+        if (!apiKey) throw new Error("API key required for Azure OpenAI")
+        const az = createAzure({
+          apiKey,
+          ...(baseURL ? { baseURL } : {}),
+          ...(apiVersion ? { apiVersion } : {}),
+        })
+        modelInstance = az(model) // model is the deployment name
+        break
+      }
       case "anthropic":
         if (!apiKey) {
           throw new Error("API key required for Anthropic")
@@ -77,6 +101,16 @@ async function polishTextWithAI(
         }
         modelInstance = google(model, { apiKey })
         break
+      case "mistral":
+        if (!apiKey) throw new Error("API key required for Mistral")
+        modelInstance = mistral(model, { apiKey })
+        break
+      case "openai-compatible": {
+        if (!baseURL) throw new Error("Base URL required for OpenAI-compatible")
+        const compat = createOpenAICompatible({ baseURL, apiKey, name: "custom" })
+        modelInstance = compat.chatModel(model)
+        break
+      }
       default:
         // Fallback to OpenAI if provider is not recognized
         modelInstance = openai("gpt-4o-mini")
@@ -84,29 +118,17 @@ async function polishTextWithAI(
 
     const { text } = await generateText({
       model: modelInstance,
-      prompt: prompt,
-      maxTokens: 1000,
-      temperature: 0.3,
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
     })
 
     return text
   } catch (error) {
-    console.error("AI polishing failed:", error)
-
-    // Fallback to basic text cleanup if AI fails
-    let polished = transcript
-      .replace(/\buh\b/gi, "")
-      .replace(/\bum\b/gi, "")
-      .replace(/\ber\b/gi, "")
-      .replace(/\s+/g, " ")
-      .trim()
-
-    polished = polished.replace(/(^|[.!?]\s+)([a-z])/g, (match, p1, p2) => p1 + p2.toUpperCase())
-
-    if (polished && !polished.match(/[.!?]$/)) {
-      polished += "."
-    }
-
-    return polished + "\n\n[Note: AI polishing unavailable, basic cleanup applied]"
+    console.error("Error in polishTextWithAI:", error)
+    throw error
   }
 }

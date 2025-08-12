@@ -16,7 +16,13 @@ import type SpeechRecognition from "speech-recognition"
 type Mode = "browser" | "llm"
 
 interface Example { input: string; output: string }
-interface LLMConfigType { provider: string; model: string; apiKey: string }
+interface LLMConfigType { 
+  provider: string; 
+  model: string; 
+  apiKey?: string;
+  baseURL?: string;
+  apiVersion?: string;
+}
 
 export default function DictationApp() {
   const [isRecording, setIsRecording] = useState(false)
@@ -36,8 +42,20 @@ export default function DictationApp() {
   )
   const [examples, setExamples] = useState<Example[]>([])
 
-  const [transcriptionConfig, setTranscriptionConfig] = useState<LLMConfigType>({ provider: "openai", model: "gpt-4o", apiKey: "" })
-  const [polishingConfig, setPolishingConfig] = useState<LLMConfigType>({ provider: "openai", model: "gpt-4o", apiKey: "" })
+  const [transcriptionConfig, setTranscriptionConfig] = useState<LLMConfigType>({ 
+    provider: "openai", 
+    model: "gpt-4o", 
+    apiKey: "",
+    baseURL: "",
+    apiVersion: "",
+  })
+  const [polishingConfig, setPolishingConfig] = useState<LLMConfigType>({ 
+    provider: "openai", 
+    model: "gpt-4o", 
+    apiKey: "",
+    baseURL: "",
+    apiVersion: "",
+  })
 
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -151,13 +169,18 @@ export default function DictationApp() {
       formData.append("audio", audioBlob)
       formData.append("provider", transcriptionConfig.provider)
       formData.append("model", transcriptionConfig.model)
-      formData.append("apiKey", transcriptionConfig.apiKey)
+      formData.append("apiKey", transcriptionConfig.apiKey || "")
+      if (transcriptionConfig.baseURL) formData.append("baseURL", transcriptionConfig.baseURL)
+      if (transcriptionConfig.apiVersion) formData.append("apiVersion", transcriptionConfig.apiVersion)
       formData.append("systemPrompt", transcriptionPrompt)
 
-      const res = await fetch("/api/transcribe", { method: "POST", body: formData })
-      if (!res.ok) throw new Error("Transcription failed")
-      const data = await res.json()
-      setRawTranscript(data.transcription || "")
+      const response = await fetch("/api/transcribe", {
+        method: "POST",
+        body: formData,
+      })
+      if (!response.ok) throw new Error("Transcription failed")
+      const data = await response.json()
+      setRawTranscript(data.transcription)
       toast({ title: "Transcribed", description: "Audio converted to text." })
     } catch (e) {
       console.error(e)
@@ -184,6 +207,8 @@ export default function DictationApp() {
           provider: polishingConfig.provider,
           model: polishingConfig.model,
           apiKey: polishingConfig.apiKey,
+          baseURL: polishingConfig.baseURL,
+          apiVersion: polishingConfig.apiVersion,
         }),
       })
       if (!res.ok) throw new Error("Polish failed")

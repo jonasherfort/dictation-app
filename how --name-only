@@ -1,0 +1,3 @@
+[33mcc56ab1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeat/neutral-ui-dictation[m[33m, [m[1;31morigin/feat/neutral-ui-dictation[m[33m)[m feat(providers): add multi-provider support for Azure OpenAI, Mistral, and OpenAI-compatible backends
+[33m4abbadf[m fix(css): use token vars for scrollbar; increase muted-foreground for contrast
+[33m1ac2cff[m feat(ui): redesign dictation workspace with neutral background, split panes, timer, and shortcuts
