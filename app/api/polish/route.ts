@@ -25,8 +25,11 @@ export async function POST(request: NextRequest) {
       apiVersion,
     } = await request.json()
 
-    if (!transcript || !transcript.trim()) {
-      return NextResponse.json({ error: "Transcript is required" }, { status: 400 })
+    if (!transcript || !systemPrompt) {
+      return NextResponse.json(
+        { error: "Missing required fields: transcript and systemPrompt" },
+        { status: 400 }
+      )
     }
 
     const polishedText = await polishTextWithAI(
@@ -90,15 +93,11 @@ async function polishTextWithAI(
         break
       }
       case "anthropic":
-        if (!apiKey) {
-          throw new Error("API key required for Anthropic")
-        }
+        if (!apiKey) throw new Error("API key required for Anthropic")
         modelInstance = anthropic(model, { apiKey })
         break
       case "google":
-        if (!apiKey) {
-          throw new Error("API key required for Google")
-        }
+        if (!apiKey) throw new Error("API key required for Google")
         modelInstance = google(model, { apiKey })
         break
       case "mistral":
@@ -106,7 +105,7 @@ async function polishTextWithAI(
         modelInstance = mistral(model, { apiKey })
         break
       case "openai-compatible": {
-        if (!baseURL) throw new Error("Base URL required for OpenAI-compatible")
+        if (!baseURL) throw new Error("Base URL required for OpenAI-compatible provider")
         const compat = createOpenAICompatible({ baseURL, apiKey, name: "custom" })
         modelInstance = compat.chatModel(model)
         break

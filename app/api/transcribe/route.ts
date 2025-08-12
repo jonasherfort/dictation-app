@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const baseURL = (formData.get("baseURL") as string) || undefined
     const apiVersion = (formData.get("apiVersion") as string) || undefined
 
-    if (!audioFile || !provider || !model || !apiKey) {
+    if (!audioFile || !provider || !model) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
@@ -33,11 +33,8 @@ export async function POST(request: NextRequest) {
         modelInstance = openai(model, { apiKey })
         break
       case "azure-openai": {
-        const az = createAzure({
-          apiKey,
-          ...(baseURL ? { baseURL } : {}),
-          ...(apiVersion ? { apiVersion } : {}),
-        })
+        if (!apiKey) return NextResponse.json({ error: "API key required" }, { status: 400 })
+        const az = createAzure({ apiKey, ...(baseURL ? { baseURL } : {}), ...(apiVersion ? { apiVersion } : {}) })
         modelInstance = az(model) // deployment name
         break
       }
@@ -51,9 +48,7 @@ export async function POST(request: NextRequest) {
         modelInstance = mistral(model, { apiKey })
         break
       case "openai-compatible": {
-        if (!baseURL) {
-          return NextResponse.json({ error: "Base URL required" }, { status: 400 })
-        }
+        if (!baseURL) return NextResponse.json({ error: "Base URL required" }, { status: 400 })
         const compat = createOpenAICompatible({ baseURL, apiKey, name: "custom" })
         modelInstance = compat.chatModel(model)
         break

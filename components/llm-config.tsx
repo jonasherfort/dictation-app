@@ -71,24 +71,44 @@ export function LLMConfig({
 
   const validateConfig = (cfg: LLMConfig, kind: "Transcription" | "Polishing"): string | null => {
     if (!cfg.provider) return `${kind}: Select a provider`
-    if (!cfg.model) return `${kind}: Select or enter a model${cfg.provider === "azure-openai" ? " (deployment name)" : ""}`
-    if (cfg.provider !== "openai-compatible" && !cfg.apiKey) return `${kind}: API key is required`
-    if (cfg.provider === "azure-openai" && !cfg.baseURL) return `${kind}: Azure base URL is required`
-    if (cfg.provider === "openai-compatible" && !cfg.baseURL) return `${kind}: Base URL is required for OpenAI-compatible`
+    // Common requirements
+    if (!cfg.model) {
+      // For Azure, "model" is the deployment name
+      return `${kind}: Select or enter a model${cfg.provider === "azure-openai" ? " (deployment name)" : ""}`
+    }
+    if (cfg.provider !== "openai-compatible" && !cfg.apiKey) {
+      // openai-compatible (local) may not need a key
+      return `${kind}: API key is required`
+    }
+    // Provider specifics
+    if (cfg.provider === "azure-openai") {
+      if (!cfg.baseURL) return `${kind}: Azure base URL is required (e.g. https://<resource>.openai.azure.com)`
+      // apiVersion optional; default applied in API
+    }
+    if (cfg.provider === "openai-compatible") {
+      if (!cfg.baseURL) return `${kind}: Base URL is required for OpenAI-compatible providers`
+    }
     return null
   }
 
   const handleSave = () => {
     const tErr = validateConfig(transcriptionConfig, "Transcription")
-    if (tErr) return toast({ title: "Invalid Configuration", description: tErr, variant: "destructive" })
+    if (tErr) {
+      toast({ title: "Invalid Configuration", description: tErr, variant: "destructive" })
+      return
+    }
     const pErr = validateConfig(polishingConfig, "Polishing")
-    if (pErr) return toast({ title: "Invalid Configuration", description: pErr, variant: "destructive" })
+    if (pErr) {
+      toast({ title: "Invalid Configuration", description: pErr, variant: "destructive" })
+      return
+    }
+
     localStorage.setItem("dictation-transcription-config", JSON.stringify(transcriptionConfig))
     localStorage.setItem("dictation-polishing-config", JSON.stringify(polishingConfig))
+
     toast({ title: "Configuration Saved", description: "LLM settings have been saved successfully" })
     onClose()
   }
-
   const ConfigSection = ({
     title,
     config,
@@ -141,7 +161,7 @@ export function LLMConfig({
                 placeholder={
                   config.provider === "azure-openai"
                     ? "https://<resource>.openai.azure.com"
-                    : "http://localhost:11434/v1"
+                    : "http://localhost:11434/v1  (or your proxy URL)"
                 }
                 className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"
               />
@@ -206,7 +226,9 @@ export function LLMConfig({
                 value={config.apiKey ?? ""}
                 onChange={(e) => onChange({ ...config, apiKey: e.target.value })}
                 placeholder={
-                  config.provider === "openai-compatible" ? "If required by your server" : "Enter your API key"
+                  config.provider === "openai-compatible"
+                    ? "If your local/custom server requires it"
+                    : "Enter your API key"
                 }
                 className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400 pr-10"
               />
@@ -272,8 +294,8 @@ export function LLMConfig({
         <div className="mt-6 p-4 bg-slate-900/30 rounded-lg border border-slate-600">
           <h4 className="text-sm font-medium text-white mb-2">Notes</h4>
           <ul className="text-xs text-slate-300 space-y-1">
-            <li>• Azure OpenAI: set Base URL (e.g. https://&lt;resource&gt;.openai.azure.com). Use your deployment name in Model.</li>
-            <li>• OpenAI-compatible (Local/Custom): set Base URL (e.g. http://localhost:11434/v1) and a model name your server exposes.</li>
+            <li>• Azure OpenAI: set <b>Base URL</b> (e.g. https://&lt;resource&gt;.openai.azure.com) and use your deployment name in the Model field.</li>
+            <li>• OpenAI-compatible (Local/Custom): set <b>Base URL</b> (e.g. http://localhost:11434/v1) and a model name your server exposes.</li>
             <li>• API keys are stored locally in your browser.</li>
           </ul>
         </div>
