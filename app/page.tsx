@@ -241,13 +241,15 @@ export default function DictationApp() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "enter") { e.preventDefault(); void polishTranscript(); }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") {
+      const key = e.key?.toLowerCase()
+      if (!key) return
+      if ((e.ctrlKey || e.metaKey) && key === "enter") { e.preventDefault(); void polishTranscript(); }
+      if ((e.ctrlKey || e.metaKey) && key === "c") {
         e.preventDefault()
         void copyToClipboard(polishedTranscript || rawTranscript)
       }
-      if (e.key.toLowerCase() === "r" && !e.repeat) { e.preventDefault(); isRecording ? stopRecording() : void startRecording() }
-      if (e.key === "Escape") { e.preventDefault(); stopRecording() }
+      if (key === "r" && !e.repeat) { e.preventDefault(); isRecording ? stopRecording() : void startRecording() }
+      if (key === "escape") { e.preventDefault(); stopRecording() }
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
