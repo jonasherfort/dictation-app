@@ -32,8 +32,6 @@ type ProviderKey =
   | "openai"
   | "azure-openai"
   | "google"
-  | "anthropic"
-  | "mistral"
   | "openai-compatible"
 
 const PROVIDERS: {
@@ -44,11 +42,9 @@ const PROVIDERS: {
   // which extra fields to render
   extra?: Array<"baseURL" | "deploymentNote" | "apiVersion">
 }[] = [
-  { value: "openai", label: "OpenAI", models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"] },
-  { value: "azure-openai", label: "Azure OpenAI", models: [], extra: ["baseURL", "deploymentNote", "apiVersion"] },
-  { value: "google", label: "Google (Gemini)", models: ["gemini-2.0-flash-exp", "gemini-1.5-pro", "gemini-1.5-flash"] },
-  { value: "anthropic", label: "Anthropic", models: ["claude-3-5-sonnet-20241022", "claude-3-haiku-20240307"] },
-  { value: "mistral", label: "Mistral", models: ["mistral-large-latest", "mistral-small-latest", "ministral-8b-latest"] },
+  { value: "openai", label: "OpenAI", models: ["gpt-5"] },
+  { value: "azure-openai", label: "Azure OpenAI", models: ["gpt-5"], extra: ["baseURL", "deploymentNote", "apiVersion"] },
+  { value: "google", label: "Google (Gemini)", models: ["gemini-2.5-flash", "gemini-2.5-pro"] },
   { value: "openai-compatible", label: "OpenAI-Compatible (Local/Custom)", models: [], extra: ["baseURL"] },
 ]
 

@@ -1,8 +1,6 @@
 import { generateText } from "ai"
 import { openai } from "@ai-sdk/openai"
-import { anthropic } from "@ai-sdk/anthropic"
 import { google } from "@ai-sdk/google"
-import { mistral } from "@ai-sdk/mistral"
 import { azure, createAzure } from "@ai-sdk/azure"
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
 import { type NextRequest, NextResponse } from "next/server"
@@ -19,7 +17,7 @@ export async function POST(request: NextRequest) {
       systemPrompt,
       examples = [],
       provider = "openai",
-      model = "gpt-4o-mini",
+      model = "gpt-5",
       apiKey,
       baseURL,
       apiVersion,
@@ -92,17 +90,9 @@ async function polishTextWithAI(
         modelInstance = az(model) // model is the deployment name
         break
       }
-      case "anthropic":
-        if (!apiKey) throw new Error("API key required for Anthropic")
-        modelInstance = anthropic(model, { apiKey })
-        break
       case "google":
         if (!apiKey) throw new Error("API key required for Google")
         modelInstance = google(model, { apiKey })
-        break
-      case "mistral":
-        if (!apiKey) throw new Error("API key required for Mistral")
-        modelInstance = mistral(model, { apiKey })
         break
       case "openai-compatible": {
         if (!baseURL) throw new Error("Base URL required for OpenAI-compatible provider")
@@ -112,7 +102,7 @@ async function polishTextWithAI(
       }
       default:
         // Fallback to OpenAI if provider is not recognized
-        modelInstance = openai("gpt-4o-mini")
+        modelInstance = openai("gpt-5")
     }
 
     const { text } = await generateText({
