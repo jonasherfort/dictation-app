@@ -42,16 +42,16 @@ export default function DictationApp() {
   )
   const [examples, setExamples] = useState<Example[]>([])
 
-  const [transcriptionConfig, setTranscriptionConfig] = useState<LLMConfigType>({ 
-    provider: "openai", 
-    model: "gpt-4o", 
+  const [transcriptionConfig, setTranscriptionConfig] = useState<LLMConfigType>({
+    provider: "openai",
+    model: "gpt-5",
     apiKey: "",
     baseURL: "",
     apiVersion: "",
   })
-  const [polishingConfig, setPolishingConfig] = useState<LLMConfigType>({ 
-    provider: "openai", 
-    model: "gpt-4o", 
+  const [polishingConfig, setPolishingConfig] = useState<LLMConfigType>({
+    provider: "openai",
+    model: "gpt-5",
     apiKey: "",
     baseURL: "",
     apiVersion: "",

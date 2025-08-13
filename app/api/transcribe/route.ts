@@ -1,8 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { openai } from "@ai-sdk/openai"
-import { anthropic } from "@ai-sdk/anthropic"
 import { google } from "@ai-sdk/google"
-import { mistral } from "@ai-sdk/mistral"
 import { azure, createAzure } from "@ai-sdk/azure"
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
 import { generateText } from "ai"
@@ -38,14 +36,8 @@ export async function POST(request: NextRequest) {
         modelInstance = az(model) // deployment name
         break
       }
-      case "anthropic":
-        modelInstance = anthropic(model, { apiKey })
-        break
       case "google":
         modelInstance = google(model, { apiKey })
-        break
-      case "mistral":
-        modelInstance = mistral(model, { apiKey })
         break
       case "openai-compatible": {
         if (!baseURL) return NextResponse.json({ error: "Base URL required" }, { status: 400 })
